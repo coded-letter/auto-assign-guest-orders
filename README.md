@@ -23,7 +23,7 @@ orders to customer accounts with matching email addresses.
 
 ## Installation
 
-1. Download `auto-assign-guest-orders-1.1.2.zip` from the latest GitHub release.
+1. Download `auto-assign-guest-orders-1.1.3.zip` from the latest GitHub release.
 2. In WordPress, open **Plugins > Add New > Upload Plugin**.
 3. Select the ZIP, install it, and activate **Auto Assign Guest Orders**.
 4. Keep WooCommerce active. The plugin works automatically.

@@ -5,7 +5,7 @@ Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
 Requires Plugins: woocommerce
-Stable tag: 1.1.2
+Stable tag: 1.1.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -56,6 +56,9 @@ after a successful login. Registration-time and new-checkout assignment require
 the account email to be verified.
 
 == Changelog ==
+
+= 1.1.3 =
+* Removed the email-verification gate from successful-login past-order relinking.
 
 = 1.1.2 =
 * Relinks exact-email guest orders immediately after successful classic or headless login.

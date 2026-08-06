@@ -3,7 +3,7 @@
  * Plugin Name: Auto Assign Guest Orders
  * Plugin URI: https://github.com/coded-letter/auto-assign-guest-orders
  * Description: Links WooCommerce guest orders to authenticated customer accounts with matching email addresses.
- * Version: 1.1.2
+ * Version: 1.1.3
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Requires Plugins: woocommerce
