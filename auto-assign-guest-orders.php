@@ -2,8 +2,8 @@
 /**
  * Plugin Name: Auto Assign Guest Orders
  * Plugin URI: https://github.com/coded-letter/auto-assign-guest-orders
- * Description: Securely links WooCommerce guest orders to verified customer accounts with matching email addresses.
- * Version: 1.1.0
+ * Description: Links WooCommerce guest orders to authenticated customer accounts with matching email addresses.
+ * Version: 1.1.2
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Requires Plugins: woocommerce
@@ -99,8 +99,7 @@ final class Auto_Assign_Guest_Orders {
 	}
 
 	/**
-	 * Links guest orders after registration on WooCommerce versions that do not
-	 * provide native customer email verification.
+	 * Links guest orders after registration once the account email is verified.
 	 *
 	 * WooCommerce's API also refreshes download permissions and customer totals.
 	 *
@@ -118,16 +117,33 @@ final class Auto_Assign_Guest_Orders {
 			return;
 		}
 
-		if ( self::woocommerce_verifies_customer_email() ) {
-			return;
-		}
-
 		if ( ! self::is_account_email_verified( $user ) ) {
-			self::send_verification_email( $user );
+			if ( self::woocommerce_verifies_customer_email() ) {
+				self::send_woocommerce_verification_email( $user );
+			} else {
+				self::send_verification_email( $user );
+			}
 			return;
 		}
 
 		wc_update_new_customer_past_orders( $user_id );
+	}
+
+	/**
+	 * Returns whether a user's current account email is verified.
+	 *
+	 * This public wrapper lets account integrations report verification state
+	 * separately from authenticated past-order relinking.
+	 *
+	 * @param int $user_id Customer user ID.
+	 * @return bool
+	 */
+	public static function is_user_email_verified( $user_id ) {
+		$user = get_userdata( absint( $user_id ) );
+
+		return $user instanceof WP_User
+			&& is_email( $user->user_email )
+			&& self::is_account_email_verified( $user );
 	}
 
 	/**
@@ -140,7 +156,39 @@ final class Auto_Assign_Guest_Orders {
 		unset( $user_login );
 
 		if ( $user instanceof WP_User ) {
-			self::assign_past_orders( $user->ID );
+			self::link_past_orders( $user->ID );
+		}
+	}
+
+	/**
+	 * Links guest orders during an authenticated headless request.
+	 *
+	 * @param int $user_id Authenticated customer ID.
+	 */
+	public static function assign_past_orders_for_authenticated_user( $user_id ) {
+		$user_id = absint( $user_id );
+
+		if ( ! $user_id || get_current_user_id() !== $user_id ) {
+			return;
+		}
+
+		self::link_past_orders( $user_id );
+	}
+
+	/**
+	 * Uses WooCommerce's exact-email relinker for an authenticated customer.
+	 *
+	 * @param int $user_id Authenticated customer ID.
+	 */
+	private static function link_past_orders( $user_id ) {
+		$user = get_userdata( absint( $user_id ) );
+
+		if (
+			$user instanceof WP_User
+			&& self::is_account_email_verified( $user )
+			&& function_exists( 'wc_update_new_customer_past_orders' )
+		) {
+			wc_update_new_customer_past_orders( $user->ID );
 		}
 	}
 
@@ -186,6 +234,46 @@ final class Auto_Assign_Guest_Orders {
 			$verified,
 			$user
 		);
+	}
+
+	/**
+	 * Requests WooCommerce's native verification email when one is not pending.
+	 *
+	 * @param WP_User $user Customer account.
+	 */
+	private static function send_woocommerce_verification_email( $user ) {
+		if (
+			! function_exists( 'wc_get_container' )
+			|| ! class_exists(
+				'\Automattic\WooCommerce\Internal\CustomerEmailVerification\EmailVerificationService'
+			)
+			|| ! class_exists(
+				'\Automattic\WooCommerce\Internal\CustomerEmailVerification\VerificationController'
+			)
+		) {
+			do_action( 'auto_assign_guest_orders_verification_email_failed', $user );
+			return;
+		}
+
+		$container  = wc_get_container();
+		$service    = $container->get(
+			'\Automattic\WooCommerce\Internal\CustomerEmailVerification\EmailVerificationService'
+		);
+		$controller = $container->get(
+			'\Automattic\WooCommerce\Internal\CustomerEmailVerification\VerificationController'
+		);
+
+		if (
+			! is_callable( array( $service, 'has_pending_key' ) )
+			|| ! is_callable( array( $controller, 'send_verification_email' ) )
+		) {
+			do_action( 'auto_assign_guest_orders_verification_email_failed', $user );
+			return;
+		}
+
+		if ( ! $service->has_pending_key( $user->ID ) ) {
+			$controller->send_verification_email( $user->ID );
+		}
 	}
 
 	/**

@@ -5,7 +5,7 @@ Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
 Requires Plugins: woocommerce
-Stable tag: 1.1.0
+Stable tag: 1.1.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -16,10 +16,9 @@ Links WooCommerce guest orders to customer accounts with matching email addresse
 Auto Assign Guest Orders keeps WooCommerce order history connected when customers
 check out before creating an account.
 
-The plugin verifies account email ownership before linking orders. On
-WooCommerce versions without native verification, the customer receives a
-one-time link that must be opened while signed in to the same account. On newer
-WooCommerce versions, the plugin respects the built-in verification flow.
+After a successful customer login, the plugin uses WooCommerce's native
+exact-email relinker to attach matching guest orders. Registration-time and
+new-checkout assignment continue to respect WooCommerce email verification.
 
 New guest checkouts are assigned to an existing account when the billing email
 matches a verified account. Classic checkout, Checkout Blocks, HPOS,
@@ -52,10 +51,20 @@ WooCommerce orders.
 
 = How are customers matched? =
 
-Orders are linked by exact billing-email and account-email matching after the
-account email has been verified.
+Past guest orders are linked by exact billing-email and account-email matching
+after a successful login. Registration-time and new-checkout assignment require
+the account email to be verified.
 
 == Changelog ==
+
+= 1.1.2 =
+* Relinks exact-email guest orders immediately after successful classic or headless login.
+* Keeps registration-time and new-checkout assignment behind email verification.
+
+= 1.1.1 =
+* Fixed past guest orders not appearing for customers already verified by WooCommerce.
+* Requests WooCommerce's native verification email when linking is blocked.
+* Added a public verification-status API for headless account pages.
 
 = 1.1.0 =
 * Replaced custom past-order queries with WooCommerce's native relinking API.

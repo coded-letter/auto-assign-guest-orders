@@ -5,8 +5,8 @@ orders to customer accounts with matching email addresses.
 
 ## Features
 
-- Verifies account email ownership before linking any guest order
-- Links matching past guest orders after verification
+- Links exact-email guest orders after successful login
+- Keeps registration and new-checkout assignment behind email verification
 - Assigns new guest checkouts to a verified account with the same email
 - Supports classic checkout and the Checkout Block/Store API
 - Uses WooCommerce CRUD APIs and supports High-Performance Order Storage (HPOS)
@@ -23,7 +23,7 @@ orders to customer accounts with matching email addresses.
 
 ## Installation
 
-1. Download `auto-assign-guest-orders-1.1.0.zip` from the latest GitHub release.
+1. Download `auto-assign-guest-orders-1.1.2.zip` from the latest GitHub release.
 2. In WordPress, open **Plugins > Add New > Upload Plugin**.
 3. Select the ZIP, install it, and activate **Auto Assign Guest Orders**.
 4. Keep WooCommerce active. The plugin works automatically.
@@ -33,15 +33,19 @@ You can also clone this repository into
 
 ## How it works
 
-On WooCommerce versions without native customer email verification, the plugin
-sends a one-time link after registration or login. The customer must open that
-link while signed in to the same account, proving control of both the account and
-its email address. It then uses WooCommerce's own past-order relinking API. That
-API keeps downloadable-product permissions, order counts, spending totals, and
-compatibility hooks correct.
+After a successful login, the plugin uses WooCommerce's own exact-email
+past-order relinking API. That API keeps downloadable-product permissions, order
+counts, spending totals, and compatibility hooks correct.
+
+Registration-time linking and assignment of newly placed guest orders still
+require email verification. On WooCommerce versions without native customer
+email verification, the plugin sends a one-time verification link for those
+flows.
 
 WooCommerce 11 and newer link past orders after the customer verifies their
-email. This plugin detects that flow and does not bypass it.
+email. This plugin detects that flow, requests the native verification email
+when needed, and relinks verified accounts if the original verification hook
+was missed.
 
 Headless sites with a separate, trusted email-verification flow can integrate
 with the verification decision:
@@ -63,6 +67,13 @@ current email address.
 For new checkouts, the plugin assigns an otherwise guest order when its billing
 email belongs to a verified WordPress account. Both classic checkout and the
 Checkout Block are supported.
+
+Headless account APIs should call
+`Auto_Assign_Guest_Orders::assign_past_orders( $user_id )` before querying an
+authenticated customer's orders. This covers token-based requests that do not
+fire WordPress's `wp_login` action. Use
+`Auto_Assign_Guest_Orders::is_user_email_verified( $user_id )` to show an
+email-verification prompt instead of an unexplained empty order history.
 
 ## Security and privacy
 
